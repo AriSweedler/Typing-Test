@@ -1,17 +1,32 @@
 <!DOCTYPE html>
 
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
 
   <title>Ari Sweedler's typing tester</title>
-  <meta name="description" content="A typing test created by Ari Sweedler in Spring of 2017.">
+  <h1>"Welcome! Hello."</h1>
+  <meta name="description" content="A typing test created by Ari Sweedler in Spring of 2017. Made with HTML5 and javascript">
   <meta name="author" content="Ari Sweedler">
 
   <link rel="stylesheet" href="css/styles.css?v=1.0">
 </head>
 
 <body>
-  <script src="js/scripts.js"></script>
+
+	<p>Your last word entered is: </p>
+	<p id="displayUserInput">...</p>
+
+	<input id="userInput" type="text" name="userInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+	<button type="button" onclick='document.getElementById("displayUserInput").innerHTML = "hey look at me!"'>Submit text</button>
+
+<script>
+var input = document.getElementById('userInput').innerHTML;
+console.log(input);
+</script>
 </body>
+
 </html>
+
