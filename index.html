@@ -6,63 +6,42 @@
   <meta charset="utf-8">
 
   <title>Ari Sweedler's typing tester</title>
-  <h1>"Welcome! Hello."</h1>
+  <h1>Welcome! Hello.</h1>
   <meta name="description" content="A typing test created by Ari Sweedler in Spring of 2017. Made with HTML5 and javascript">
   <meta name="author" content="Ari Sweedler">
 
-  <link rel="stylesheet" href="css/styles.css?v=1.0">
 </head>
 
 <body>
 
-	<!--
-	<p>
-	<span>Your last word entered is: </span>
-	<span id="dispUIWord">...</span>
-	</p>
+	<p id=testPreview>Type these words: </p>
 
-	<p>
-	<span>Your last char entered is: </span>
-	<span id="dispUIChar">...</span>
-	</p>
-	-->
-
-	<p>
-	<span>Here is the entire test: </span>
-	<span id="entireTest"></span>
-	</p>
-
-	<p>
-	<span>We are on word number.. </span>
-	<span id="wordNumber"></span>
-	</p>
-
-	<p>
-	<span>Here is the next word you have to type: </span>
-	<span id="typeThisNow"></span>
-	</p>
-
-	<form id = inputForm>
+	<form id="inputForm">
 		Type here: <input id="userInput" type="text" name="userInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 	</form>
 
-	
+	<span id="entireTest"></span>
+	<span id="wordNumber">1</span>
+	<span id="typeThisNow"></span>
 
 <script>
 
+document.getElementById("entireTest").style.visibility = "hidden";
+document.getElementById("wordNumber").style.visibility = "hidden";
+document.getElementById("typeThisNow").style.visibility = "hidden";
+
+
 document.getElementById("userInput").addEventListener("input", observeInput);
-document.getElementById("wordNumber").innerHTML = 1;
+document.getElementById("entireTest").innerHTML = generateNewWordList(50);	//hide this when we're done
+document.getElementById("typeThisNow").innerHTML = getWordFromTest(1);
+generatePreview();
 
 function observeInput(){
-	console.log("Input observed.");
-
-	var form = document.getElementById("userInput");
-	var curWord = form.value;
+	var userIn = document.getElementById("userInput");
+	var curWord = userIn.value;
 	var finChar = curWord.charAt(curWord.length-1);
 	if (finChar == " "){
-		console.log("User has finished typing this word (emptying form)");
-		form.value = "";
-		console.log(curWord);
+		userIn.value = "";
 		userTyped(curWord);
 	}
 	
@@ -71,23 +50,61 @@ function observeInput(){
 }
 
 function userTyped(userWord){
-	var correctly = (userWord == document.getElementById("typeThisNow").innerHTML);	//did user type it perfectly?
-	document.getElementById("wordNumber").innerHTML++;	//update the word number that we're on
-	var newWordNumber = document.getElementById("wordNumber").innerHTML;	//and fetch that word
-	document.getElementById("typeThisNow").innerHTML = getWordFromTest(newWordNumber);
-	return correctly;
+	var correctly = stringEqual(userWord, document.getElementById("typeThisNow").innerHTML);	//did user type it perfectly?
+	document.getElementById("wordNumber").innerHTML++;	//update the number that we're on
+	var newWordNumber = Number(document.getElementById("wordNumber").innerHTML);
+	document.getElementById("typeThisNow").innerHTML = getWordFromTest(newWordNumber);	//update the word that we're on
+	updatePreview(correctly);
 }
 
-</script>
+function stringEqual(str1, str2){
+	var i = 0;
+	for(i = 0; i < str2.length; i++){
+		if (str1[i] != str2[i]){
+			return false;
+		}
+	}
+	return true;
+}
 
-<script>
-document.getElementById("entireTest").innerHTML = generateNewWordList(20);	//hide this when we're done
-document.getElementById("typeThisNow").innerHTML = getWordFromTest(1);
+function generatePreview(){
+	var i = 0;
+	for(i = -3; i < 6; i++){
+		var para = document.createElement("span");					// Create a <span> element
+		var word = getWordFromTest(i);
+		var t = document.createTextNode(word + " ");      			// Create a text node
+		if(i > 0){
+			para.style.fontWeight = 700;
+		}
+		para.appendChild(t);                                        // Append the text to <span>
+		document.getElementById("testPreview").appendChild(para);	// Append <span> to <div> with id="testPreview"
+	}
+}
 
+function updatePreview(correctly){
+	//deletes the first word
+	var childNodes = document.getElementById("testPreview").childNodes;
+	document.getElementById("testPreview").removeChild(childNodes[1]);
+
+	//colors the current word based on correct typing
+	childNodes[4].style.color = correctly?"green":"red";
+	childNodes[4].style.fontWeight = 300;
+
+	//and adds a new word at the end
+	var para = document.createElement("span");					// Create a <span> element
+	var futureWordNumber = Number(document.getElementById("wordNumber").innerHTML) + 4;
+	var futureWord = getWordFromTest(futureWordNumber);
+	var t = document.createTextNode(futureWord + " ");      		// Create a text node
+	para.style.fontWeight = 700;
+	para.appendChild(t);                                        	// Append the text to <span>
+	document.getElementById("testPreview").appendChild(para);		// Append <span> to <div> with id="testPreview"
+}
+
+//make sure you pass in a NUMBER to this function, and not a STRING. wordNumber+1 will only get the correct answer if you pass in a NUMBER.
 function getWordFromTest(wordNumber){
 	var str = document.getElementById("entireTest").innerHTML;
 	var startIndex = str.search(threeDig(wordNumber));
-	var endIndex = str.search(threeDig(Number(wordNumber)+1));
+	var endIndex = str.search(threeDig(wordNumber+1));
 	var answer = str.substring(startIndex+3, endIndex);
 
 	return answer;
