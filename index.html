@@ -13,6 +13,18 @@
 </head>
 
 <body>
+	
+	<div id="accuracyOutput">Words correct:
+		<span id="wordsCorrect">0</span>
+		<span> of </span>
+		<span id="wordsSubmitted">0</span>		
+	</div>
+
+	<div id="timerPreview">
+		<span>You have </span>
+		<span id="time">60</span>
+		<span> seconds left.</span>
+	</div>
 
 	<p id=testPreview>Type these words: </p>
 
@@ -20,23 +32,46 @@
 		Type here: <input id="userInput" type="text" name="userInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 	</form>
 
-	<span id="entireTest"></span>
-	<span id="wordNumber">1</span>
-	<span id="typeThisNow"></span>
+	<div id="hidden">
+		<span id="entireTest"></span>
+		<span id="typeThisNow"></span>
+		<span id="noInputYet">true</span>
+		<span id="wordNumber">1</span>
+	</div>
 
 <script>
 
-document.getElementById("entireTest").style.visibility = "hidden";
-document.getElementById("wordNumber").style.visibility = "hidden";
-document.getElementById("typeThisNow").style.visibility = "hidden";
-
+document.getElementById("hidden").style.visibility = "hidden";
 
 document.getElementById("userInput").addEventListener("input", observeInput);
 document.getElementById("entireTest").innerHTML = generateNewWordList(50);	//hide this when we're done
 document.getElementById("typeThisNow").innerHTML = getWordFromTest(1);
 generatePreview();
 
+function startTimer(){
+	setInterval(function() {
+    
+    var time = document.getElementById("time");
+    // take one second off
+    time.innerHTML--;
+    
+    // When the countdown is over...
+    if (time.innerHTML == "0") {
+        clearInterval(x);
+        document.getElementById("time").innerHTML = "EXPIRED";
+    }
+
+	}, 1000);
+}
+
 function observeInput(){
+
+	if(document.getElementById("noInputYet").innerHTML == "true"){
+		console.log("first input");
+		document.getElementById("noInputYet").innerHTML = "false";
+		startTimer();
+	}
+
 	var userIn = document.getElementById("userInput");
 	var curWord = userIn.value;
 	var finChar = curWord.charAt(curWord.length-1);
@@ -54,6 +89,10 @@ function userTyped(userWord){
 	document.getElementById("wordNumber").innerHTML++;	//update the number that we're on
 	var newWordNumber = Number(document.getElementById("wordNumber").innerHTML);
 	document.getElementById("typeThisNow").innerHTML = getWordFromTest(newWordNumber);	//update the word that we're on
+	document.getElementById("wordsSubmitted").innerHTML++;
+	if(correctly){
+		document.getElementById("wordsCorrect").innerHTML++;
+	}
 	updatePreview(correctly);
 }
 
