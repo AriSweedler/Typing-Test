@@ -3,12 +3,13 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
+	<meta charset="utf-8">
 
-  <title>Ari Sweedler's typing tester</title>
-  <h1>Welcome! Hello.</h1>
-  <meta name="description" content="A typing test created by Ari Sweedler in Spring of 2017. Made with HTML5 and javascript">
-  <meta name="author" content="Ari Sweedler">
+	<title>Ari Sweedler's typing tester</title>
+	<h1>Welcome! Hello.</h1>
+	<meta name="description" content="A typing test created by Ari Sweedler in Spring of 2017. Made with HTML5 and javascript">
+	<meta name="author" content="Ari Sweedler">
+	<link rel="stylesheet" href="styles.css">
 
 </head>
 
@@ -22,78 +23,121 @@
 
 	<div id="timerPreview">
 		<span>You have </span>
-		<span id="time">60</span>
+		<span id="time"></span>
 		<span> seconds left.</span>
 	</div>
 
-	<p id=testPreview>Type these words: </p>
+	<p id=testPreview>
+		<div id="restOfTest" hidden="hidden"></div>
+	</p>
 
 	<form id="inputForm">
-		Type here: <input id="userInput" type="text" name="userInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+		Type here: <input id="userInput" type="text" name="userInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeyup=observeInput(event)>
 	</form>
-
-	<div id="hidden">
-		<span id="entireTest"></span>
-		<span id="typeThisNow"></span>
-		<span id="noInputYet">true</span>
-		<span id="wordNumber">1</span>
-	</div>
 
 <script>
 
-document.getElementById("hidden").style.visibility = "hidden";
+const TEST_LENGTH = 90;
+const ROW_LENGTH = 50;
+const TIME = 60;
+document.getElementById("time").innerHTML = TIME;
 
-document.getElementById("userInput").addEventListener("input", observeInput);
-document.getElementById("entireTest").innerHTML = generateNewWordList(50);	//hide this when we're done
-document.getElementById("typeThisNow").innerHTML = getWordFromTest(1);
-generatePreview();
+generateTest(document.getElementById("restOfTest"), formTestArray(TEST_LENGTH));
+document.getElementById("userInput").addEventListener("input", startTimer);
+
+var rowNumber = 1;
+var dispWordNumber = 1;
+var userWordNumber = 1;
+generateDisplayRow();
+generateDisplayRow();
+formatTestPreview();
+
+var wordsSubmitted = 0;
+var wordsCorrect = 0;
+
+function observeInput(event){
+	var charTyped = String.fromCharCode(event.keyCode);
+	if (charTyped == ' '){
+		let userIn = document.getElementById("userInput");
+		userTyped(userIn.value);
+		userIn.value = "";
+	}
+}
 
 function startTimer(){
-	setInterval(function() {
-    
-    var time = document.getElementById("time");
-    // take one second off
-    time.innerHTML--;
-    
-    // When the countdown is over...
-    if (time.innerHTML == "0") {
-        clearInterval(x);
-        document.getElementById("time").innerHTML = "EXPIRED";
-    }
+	document.getElementById("userInput").removeEventListener("input", startTimer);
+	var clock = setInterval(function() {    
+    	var time = document.getElementById("time");
+    	// take one second off
+    	time.innerHTML--;
 
+    	// When the countdown is over...
+    	if (time.innerHTML == "-1") {
+    	    clearInterval(clock);
+    	    document.getElementById("time").innerHTML = "ZERO";
+    	    alert(timesUp());
+    	}
 	}, 1000);
 }
 
-function observeInput(){
+function timesUp(){
 
-	if(document.getElementById("noInputYet").innerHTML == "true"){
-		console.log("first input");
-		document.getElementById("noInputYet").innerHTML = "false";
-		startTimer();
-	}
+	var inputBox = document.getElementById("userInput");
+	inputBox.value="";
+	inputBox.disabled="disabled";
 
-	var userIn = document.getElementById("userInput");
-	var curWord = userIn.value;
-	var finChar = curWord.charAt(curWord.length-1);
-	if (finChar == " "){
-		userIn.value = "";
-		userTyped(curWord);
-	}
+	var wordsCorrect = document.getElementById("wordsCorrect").innerHTML;
+	var wordsSubmitted = document.getElementById("wordsSubmitted").innerHTML;
+	var percentAccuracy = (100*(wordsCorrect/wordsSubmitted).toFixed(4));
+
+	var congrats = "Congratulations!";
+	var return1 = " You typed " + wordsCorrect + " words correctly out of " + wordsSubmitted+ ".";
+	var return2 = "That's " + wordsCorrect + " words per minute at " + percentAccuracy + " % accuracy";
+
+	var divResults = document.createElement("div");		// Create a <div> element
+	document.body.appendChild(divResults);
 	
-	/*document.getElementById("dispUIWord").innerHTML = curWord;
-	document.getElementById("dispUIChar").innerHTML = ".." + finChar + "..";*/
+	var para = document.createElement("p")
+	var text1 = document.createTextNode(return1 + '\n');	// Create a text node
+	var text2 = document.createTextNode(return2);			// Create a text node
+	para.appendChild(text1);
+	para.appendChild(text2);
+
+	divResults.appendChild(para);
+
+	return (congrats + '\n' + return1 + '\n' + return2);
 }
 
-function userTyped(userWord){
-	var correctly = stringEqual(userWord, document.getElementById("typeThisNow").innerHTML);	//did user type it perfectly?
-	document.getElementById("wordNumber").innerHTML++;	//update the number that we're on
-	var newWordNumber = Number(document.getElementById("wordNumber").innerHTML);
-	document.getElementById("typeThisNow").innerHTML = getWordFromTest(newWordNumber);	//update the word that we're on
-	document.getElementById("wordsSubmitted").innerHTML++;
-	if(correctly){
-		document.getElementById("wordsCorrect").innerHTML++;
+function generateDisplayRow(){
+	let rowSize = 0;
+	let row = document.createElement("div");
+	row.setAttribute("id", "row " + rowNumber);
+
+	while (rowSize < ROW_LENGTH){
+		let span = document.getElementById("word " + (dispWordNumber++));
+		row.appendChild(span);
+		row.appendChild(document.createTextNode(" "));
+		rowSize += span.innerHTML.length + 1;
 	}
-	updatePreview(correctly);
+
+	document.getElementById("testPreview").appendChild(row);
+	rowNumber++;
+}
+
+//TODO
+function userTyped(userWord){
+	var target = document.getElementById("word " + (userWordNumber));
+	var targetWord = target.innerHTML;
+	userWordNumber++;	//update the number that we're on
+
+	document.getElementById("wordsSubmitted").innerHTML++;
+	if(stringEqual(userWord, target.innerHTML)){
+		document.getElementById("wordsCorrect").innerHTML++;
+		formatOldWord(true);
+	} else {
+		formatOldWord(false);
+	}
+	formatTestPreview();
 }
 
 function stringEqual(str1, str2){
@@ -106,18 +150,32 @@ function stringEqual(str1, str2){
 	return true;
 }
 
-function generatePreview(){
-	var i = 0;
-	for(i = -3; i < 6; i++){
-		var para = document.createElement("span");					// Create a <span> element
-		var word = getWordFromTest(i);
-		var t = document.createTextNode(word + " ");      			// Create a text node
-		if(i > 0){
-			para.style.fontWeight = 700;
-		}
-		para.appendChild(t);                                        // Append the text to <span>
-		document.getElementById("testPreview").appendChild(para);	// Append <span> to <div> with id="testPreview"
+function formatTestPreview(){
+	
+	var testPreview = document.getElementById("testPreview");
+	var lastRow = testPreview.lastChild;
+	var newRowWord = lastRow.firstChild;	//if this is the current word, then we are on a new line!
+	var curWord = document.getElementById("word " + (userWordNumber));
+
+	if (newRowWord == curWord){
+		testPreview.removeChild(lastRow.previousSibling);
+		generateDisplayRow();
 	}
+
+	formatNewWord();
+}
+
+function formatNewWord(){
+	var curWord = document.getElementById("word " + (userWordNumber));
+	curWord.style.fontWeight = 700;
+	curWord.style.backgroundColor = "yellow";
+}
+
+function formatOldWord(correctly){
+	var oldWord = document.getElementById("word " + (userWordNumber-1));
+	oldWord.style.color = correctly?"green":"red";
+	oldWord.style.fontWeight = 300;
+	oldWord.style.backgroundColor = "white";
 }
 
 function updatePreview(correctly){
@@ -126,8 +184,14 @@ function updatePreview(correctly){
 	document.getElementById("testPreview").removeChild(childNodes[1]);
 
 	//colors the current word based on correct typing
-	childNodes[4].style.color = correctly?"green":"red";
-	childNodes[4].style.fontWeight = 300;
+	var pastWord = childNodes[4];
+	pastWord.style.color = correctly?"green":"red";
+	pastWord.style.fontWeight = 300;
+	pastWord.style.backgroundColor = "white";
+
+	//highlight the next word we need to type
+	var curWord = childNodes[5];
+	curWord.style.backgroundColor = "yellow";
 
 	//and adds a new word at the end
 	var para = document.createElement("span");					// Create a <span> element
@@ -139,41 +203,35 @@ function updatePreview(correctly){
 	document.getElementById("testPreview").appendChild(para);		// Append <span> to <div> with id="testPreview"
 }
 
-//make sure you pass in a NUMBER to this function, and not a STRING. wordNumber+1 will only get the correct answer if you pass in a NUMBER.
 function getWordFromTest(wordNumber){
-	var str = document.getElementById("entireTest").innerHTML;
-	var startIndex = str.search(threeDig(wordNumber));
-	var endIndex = str.search(threeDig(wordNumber+1));
-	var answer = str.substring(startIndex+3, endIndex);
-
-	return answer;
+	var str = document.getElementById("word " + wordNumber).innerHTML;
+	return str;
 }
 
-function generateNewWordList(numWordsInTest){
+function generateTest(domObject, testArray){
 
-	var wordList = "";
-
-	var i = 1;
-	for(i = 1; i < numWordsInTest + 1; i++){
-		wordList = wordList + threeDig(i) + randomWord();
+	for(let i = 0; i < testArray.length; i++){
+		
+		let word = document.createTextNode(testArray[i]);
+		let span = document.createElement("span");
+		span.setAttribute("id", "word " + (i+1));
+		span.appendChild(word);
+		domObject.appendChild(span);
 	}
-
-	return wordList;
 }
 
-function randomWord(){
+function formTestArray(numWords){
+
 	var top1000MostCommonEnglishWords = ["a", "ability", "able", "about", "above", "accept", "according", "account", "across", "act", "action", "activity", "actually", "add", "address", "administration", "admit", "adult", "affect", "after", "again", "against", "age", "agency", "agent", "ago", "agree", "agreement", "ahead", "air", "all", "allow", "almost", "alone", "along", "already", "also", "although", "always", "American", "among", "amount", "analysis", "and", "animal", "another", "answer", "any", "anyone", "anything", "appear", "apply", "approach", "area", "argue", "arm", "around", "arrive", "art", "article", "artist", "as", "ask", "assume", "at", "attack", "attention", "attorney", "audience", "author", "authority", "available", "avoid", "away", "baby", "back", "bad", "bag", "ball", "bank", "bar", "base", "be", "beat", "beautiful", "because", "become", "bed", "before", "begin", "behavior", "behind", "believe", "benefit", "best", "better", "between", "beyond", "big", "bill", "billion", "bit", "black", "blood", "blue", "board", "body", "book", "born", "both", "box", "boy", "break", "bring", "brother", "budget", "build", "building", "business", "but", "buy", "by", "call", "camera", "campaign", "can", "cancer", "candidate", "capital", "car", "card", "care", "career", "carry", "case", "catch", "cause", "cell", "center", "central", "century", "certain", "certainly", "chair", "challenge", "chance", "change", "character", "charge", "check", "child", "choice", "choose", "church", "citizen", "city", "civil", "claim", "class", "clear", "clearly", "close", "coach", "cold", "collection", "college", "color", "come", "commercial", "common", "community", "company", "compare", "computer", "concern", "condition", "conference", "congress", "consider", "consumer", "contain", "continue", "control", "cost", "could", "country", "couple", "course", "court", "cover", "create", "crime", "cultural", "culture", "cup", "current", "customer", "cut", "dark", "data", "daughter", "day", "dead", "deal", "death", "debate", "decade", "decide", "decision", "deep", "defense", "degree", "Democrat", "democratic", "describe", "design", "despite", "detail", "determine", "develop", "development", "die", "difference", "different", "difficult", "dinner", "direction", "director", "discover", "discuss", "discussion", "disease", "do", "doctor", "dog", "door", "down", "draw", "dream", "drive", "drop", "drug", "during", "each", "early", "east", "easy", "eat", "economic", "economy", "edge", "education", "effect", "effort", "eight", "either", "election", "else", "employee", "end", "energy", "enjoy", "enough", "enter", "entire", "environment", "environmental", "especially", "establish", "even", "evening", "event", "ever", "every", "everybody", "everyone", "everything", "evidence", "exactly", "example", "executive", "exist", "expect", "experience", "expert", "explain", "eye", "face", "fact", "factor", "fail", "fall", "family", "far", "fast", "father", "fear", "federal", "feel", "feeling", "few", "field", "fight", "figure", "fill", "film", "final", "finally", "financial", "find", "fine", "finger", "finish", "fire", "firm", "first", "fish", "five", "floor", "fly", "focus", "follow", "food", "foot", "for", "force", "foreign", "forget", "form", "former", "forward", "four", "free", "friend", "from", "front", "full", "fund", "future", "game", "garden", "gas", "general", "generation", "get", "girl", "give", "glass", "go", "goal", "good", "government", "great", "green", "ground", "group", "grow", "growth", "guess", "gun", "guy", "hair", "half", "hand", "hang", "happen", "happy", "hard", "have", "he", "head", "health", "hear", "heart", "heat", "heavy", "help", "her", "here", "herself", "high", "him", "himself", "his", "history", "hit", "hold", "home", "hope", "hospital", "hot", "hotel", "hour", "house", "how", "however", "huge", "human", "hundred", "husband", "I", "idea", "identify", "if", "image", "imagine", "impact", "important", "improve", "in", "include", "including", "increase", "indeed", "indicate", "individual", "industry", "information", "inside", "instead", "institution", "interest", "interesting", "international", "interview", "into", "investment", "involve", "issue", "it", "item", "its", "itself", "job", "join", "just", "keep", "key", "kid", "kill", "kind", "kitchen", "know", "knowledge", "land", "language", "large", "last", "late", "later", "laugh", "law", "lawyer", "lay", "lead", "leader", "learn", "least", "leave", "left", "leg", "legal", "less", "let", "letter", "level", "lie", "life", "light", "like", "likely", "line", "list", "listen", "little", "live", "local", "long", "look", "lose", "loss", "lot", "love", "low", "machine", "magazine", "main", "maintain", "major", "majority", "make", "man", "manage", "management", "manager", "many", "market", "marriage", "material", "matter", "may", "maybe", "me", "mean", "measure", "media", "medical", "meet", "meeting", "member", "memory", "mention", "message", "method", "middle", "might", "military", "million", "mind", "minute", "miss", "mission", "model", "modern", "moment", "money", "month", "more", "morning", "most", "mother", "mouth", "move", "movement", "movie", "Mr", "Mrs", "much", "music", "must", "my", "myself", "name", "nation", "national", "natural", "nature", "near", "nearly", "necessary", "need", "network", "never", "new", "news", "newspaper", "next", "nice", "night", "no", "none", "nor", "north", "not", "note", "nothing", "notice", "now", "not", "number", "occur", "of", "off", "offer", "office", "officer", "official", "often", "oh", "oil", "ok", "old", "on", "once", "one", "only", "onto", "open", "operation", "opportunity", "option", "or", "order", "organization", "other", "others", "our", "out", "outside", "over", "own", "owner", "page", "pain", "painting", "paper", "parent", "part", "participant", "particular", "particularly", "partner", "party", "pass", "past", "patient", "pattern", "pay", "peace", "people", "per", "perform", "performance", "perhaps", "period", "person", "personal", "phone", "physical", "pick", "picture", "piece", "place", "plan", "plant", "play", "player", "PM", "point", "police", "policy", "political", "politics", "poor", "popular", "population", "position", "positive", "possible", "power", "practice", "prepare", "present", "president", "pressure", "pretty", "prevent", "price", "private", "probably", "problem", "process", "produce", "product", "production", "professional", "professor", "program", "project", "property", "protect", "prove", "provide", "public", "pull", "purpose", "push", "put", "quality", "question", "quickly", "quite", "race", "radio", "raise", "range", "rate", "rather", "reach", "read", "ready", "real", "reality", "realize", "really", "reason", "receive", "recent", "recently", "recognize", "record", "red", "reduce", "reflect", "region", "relate", "relationship", "religious", "remain", "remember", "remove", "report", "represent", "republican", "require", "research", "resource", "respond", "response", "responsibility", "rest", "result", "return", "reveal", "rich", "right", "rise", "risk", "road", "rock", "role", "room", "rule", "run", "safe", "same", "save", "say", "scene", "school", "science", "scientist", "score", "sea", "season", "seat", "second", "section", "security", "see", "seek", "seem", "sell", "send", "senior", "sense", "series", "serious", "serve", "service", "set", "seven", "several", "sex", "sexual", "shake", "share", "she", "shoot", "short", "shot", "should", "shoulder", "show", "side", "sign", "significant", "similar", "simple", "simply", "since", "sing", "single", "sister", "sit", "site", "situation", "six", "size", "skill", "skin", "small", "smile", "so", "social", "society", "soldier", "some", "somebody", "someone", "something", "sometimes", "son", "song", "soon", "sort", "sound", "source", "south", "southern", "space", "speak", "special", "specific", "speech", "spend", "sport", "spring", "staff", "stage", "stand", "standard", "star", "start", "state", "statement", "station", "stay", "step", "still", "stock", "stop", "store", "story", "strategy", "street", "strong", "structure", "student", "study", "stuff", "style", "subject", "success", "successful", "such", "suddenly", "suffer", "suggest", "summer", "support", "sure", "surface", "system", "table", "take", "talk", "task", "tax", "teach", "teacher", "team", "technology", "television", "tell", "ten", "tend", "term", "test", "than", "thank", "that", "the", "their", "them", "themselves", "then", "theory", "there", "these", "they", "thing", "think", "third", "this", "those", "though", "thought", "thousand", "threat", "three", "through", "throughout", "throw", "thus", "time", "to", "today", "together", "tonight", "too", "top", "total", "tough", "toward", "town", "trade", "traditional", "training", "travel", "treat", "treatment", "tree", "trial", "trip", "trouble", "true", "truth", "try", "turn", "TV", "two", "type", "under", "understand", "unit", "until", "up", "upon", "us", "use", "usually", "value", "various", "very", "victim", "view", "violence", "visit", "voice", "vote", "wait", "walk", "wall", "want", "war", "watch", "water", "way", "we", "weapon", "wear", "week", "weight", "well", "west", "western", "what", "whatever", "when", "where", "whether", "which", "while", "white", "who", "whole", "whom", "whose", "why", "wide", "wife", "will", "win", "wind", "window", "wish", "with", "within", "without", "woman", "wonder", "word", "work", "worker", "world", "worry", "would", "write", "writer", "wrong", "yard", "yeah", "year", "yes", "yet", "you", "young", "your", "yourself"];
-	var index = Math.floor(Math.random() * 1000);
 
-	return top1000MostCommonEnglishWords[index];
-}
+	var returnMe = []; 
 
-function threeDig(input){
-	var answer = input;
-	while (answer.length != 3){
-		answer = "0" + answer;
+	for(let i = 0; i < numWords; i++){
+		let randInt = Math.floor(Math.random() * 1000);
+		returnMe.push(top1000MostCommonEnglishWords[randInt]);
 	}
-	return answer;
+
+	return returnMe;
 }
 
 </script>
