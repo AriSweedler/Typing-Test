@@ -38,23 +38,26 @@
 <script>
 
 const TEST_LENGTH = 90;
-const ROW_LENGTH = 50;
+const CHARS_IN_ROW_ALLOWED = 50;
 const TIME = 60;
 document.getElementById("time").innerHTML = TIME;
 
+//into the DOM element "restOfTest", place these 90 words
 generateTest(document.getElementById("restOfTest"), formTestArray(TEST_LENGTH));
+
+//when the user first types, start the timer
 document.getElementById("userInput").addEventListener("input", startTimer);
 
-var rowNumber = 1;
+//I don't like having these here, but I didn't know what else to do
 var dispWordNumber = 1;
 var userWordNumber = 1;
+var wordsSubmitted = 0;
+var wordsCorrect = 0;
 generateDisplayRow();
 generateDisplayRow();
 formatTestPreview();
 
-var wordsSubmitted = 0;
-var wordsCorrect = 0;
-
+//I didn't dynamically create the eventListener on my input form/box because its going to be permanent. Also, I used onkeyup instead of input so that I could tell which specific key was pressed. I couldn't figure out how to do that with the "input" event.
 function observeInput(event){
 	var charTyped = String.fromCharCode(event.keyCode);
 	if (charTyped == ' '){
@@ -64,8 +67,11 @@ function observeInput(event){
 	}
 }
 
+//I remove the event listener, because if I didn't, then I'd be starting this timer a bunch of times. And if I started the timer 5 times, then it would run out 5 times too fast. It was a weird bug and I didn't get why my timer started zooming towards 0 after a few inputs.
 function startTimer(){
+
 	document.getElementById("userInput").removeEventListener("input", startTimer);
+
 	var clock = setInterval(function() {    
     	var time = document.getElementById("time");
     	// take one second off
@@ -78,6 +84,86 @@ function startTimer(){
     	    alert(timesUp());
     	}
 	}, 1000);
+}
+
+//I've created a span with an ID relative to its position in the test for each word. Now that I have this, all I have to do is display them and check to see if the user types something matching
+function generateTest(domObject, testArray){
+
+	for(let i = 0; i < testArray.length; i++){
+		
+		let word = document.createTextNode(testArray[i]);
+		let span = document.createElement("span");
+		span.setAttribute("id", "word " + (i+1));
+		span.appendChild(word);
+		domObject.appendChild(span);
+	}
+}
+
+function generateDisplayRow(){
+	let charsInRow = 0;
+	let row = document.createElement("div");
+
+	while (charsInRow < CHARS_IN_ROW_ALLOWED){
+		let span = document.getElementById("word " + (dispWordNumber++));	//I'm taking advantage of global variables here, we never leave dispWordNumber's scope. This kinda feels weird, but it works, I guess?
+		row.appendChild(span);
+		row.appendChild(document.createTextNode(" "));	//formatting
+		charsInRow += span.innerHTML.length + 1;
+	}
+
+	document.getElementById("testPreview").appendChild(row);
+}
+
+function userTyped(userWord){
+	var block = document.getElementById("word " + (userWordNumber++));	//userWordNumber keeps track of the word that the user is on. Another global variable
+	var targetWord = block.innerHTML;
+
+	document.getElementById("wordsSubmitted").innerHTML++;
+
+	if(stringEqual(userWord, targetWord)){
+		document.getElementById("wordsCorrect").innerHTML++;
+		formatOldWord(true);
+	} else {
+		formatOldWord(false);
+	}
+	formatTestPreview();
+}
+
+function stringEqual(str1, str2){
+	var i = 0;
+	for(i = 0; i < Math.max(str1.length, str2.length); i++){
+		if (str1[i] != str2[i]){
+			return false;
+		}
+	}
+	return true;
+}
+
+function formatTestPreview(){
+	
+	var testPreview = document.getElementById("testPreview");
+	var lastRow = testPreview.lastChild;
+	var newRowWord = lastRow.firstChild;	//if this is the current word, then we are on a new line!
+	var curWord = document.getElementById("word " + (userWordNumber));
+
+	if (newRowWord == curWord){	//if we're on the last row, then stop displaying the first row and generate a new one
+		testPreview.removeChild(lastRow.previousSibling);
+		generateDisplayRow();
+	}
+
+	formatNewWord();
+}
+
+function formatNewWord(){
+	var curWord = document.getElementById("word " + (userWordNumber));
+	curWord.style.fontWeight = 700;
+	curWord.style.backgroundColor = "yellow";
+}
+
+function formatOldWord(correctly){
+	var oldWord = document.getElementById("word " + (userWordNumber-1));
+	oldWord.style.color = correctly?"green":"red";
+	oldWord.style.fontWeight = 300;
+	oldWord.style.backgroundColor = "white";
 }
 
 function timesUp(){
@@ -106,118 +192,6 @@ function timesUp(){
 	divResults.appendChild(para);
 
 	return (congrats + '\n' + return1 + '\n' + return2);
-}
-
-function generateDisplayRow(){
-	let rowSize = 0;
-	let row = document.createElement("div");
-	row.setAttribute("id", "row " + rowNumber);
-
-	while (rowSize < ROW_LENGTH){
-		let span = document.getElementById("word " + (dispWordNumber++));
-		row.appendChild(span);
-		row.appendChild(document.createTextNode(" "));
-		rowSize += span.innerHTML.length + 1;
-	}
-
-	document.getElementById("testPreview").appendChild(row);
-	rowNumber++;
-}
-
-//TODO
-function userTyped(userWord){
-	var target = document.getElementById("word " + (userWordNumber));
-	var targetWord = target.innerHTML;
-	userWordNumber++;	//update the number that we're on
-
-	document.getElementById("wordsSubmitted").innerHTML++;
-	if(stringEqual(userWord, target.innerHTML)){
-		document.getElementById("wordsCorrect").innerHTML++;
-		formatOldWord(true);
-	} else {
-		formatOldWord(false);
-	}
-	formatTestPreview();
-}
-
-function stringEqual(str1, str2){
-	var i = 0;
-	for(i = 0; i < str2.length; i++){
-		if (str1[i] != str2[i]){
-			return false;
-		}
-	}
-	return true;
-}
-
-function formatTestPreview(){
-	
-	var testPreview = document.getElementById("testPreview");
-	var lastRow = testPreview.lastChild;
-	var newRowWord = lastRow.firstChild;	//if this is the current word, then we are on a new line!
-	var curWord = document.getElementById("word " + (userWordNumber));
-
-	if (newRowWord == curWord){
-		testPreview.removeChild(lastRow.previousSibling);
-		generateDisplayRow();
-	}
-
-	formatNewWord();
-}
-
-function formatNewWord(){
-	var curWord = document.getElementById("word " + (userWordNumber));
-	curWord.style.fontWeight = 700;
-	curWord.style.backgroundColor = "yellow";
-}
-
-function formatOldWord(correctly){
-	var oldWord = document.getElementById("word " + (userWordNumber-1));
-	oldWord.style.color = correctly?"green":"red";
-	oldWord.style.fontWeight = 300;
-	oldWord.style.backgroundColor = "white";
-}
-
-function updatePreview(correctly){
-	//deletes the first word
-	var childNodes = document.getElementById("testPreview").childNodes;
-	document.getElementById("testPreview").removeChild(childNodes[1]);
-
-	//colors the current word based on correct typing
-	var pastWord = childNodes[4];
-	pastWord.style.color = correctly?"green":"red";
-	pastWord.style.fontWeight = 300;
-	pastWord.style.backgroundColor = "white";
-
-	//highlight the next word we need to type
-	var curWord = childNodes[5];
-	curWord.style.backgroundColor = "yellow";
-
-	//and adds a new word at the end
-	var para = document.createElement("span");					// Create a <span> element
-	var futureWordNumber = Number(document.getElementById("wordNumber").innerHTML) + 4;
-	var futureWord = getWordFromTest(futureWordNumber);
-	var t = document.createTextNode(futureWord + " ");      		// Create a text node
-	para.style.fontWeight = 700;
-	para.appendChild(t);                                        	// Append the text to <span>
-	document.getElementById("testPreview").appendChild(para);		// Append <span> to <div> with id="testPreview"
-}
-
-function getWordFromTest(wordNumber){
-	var str = document.getElementById("word " + wordNumber).innerHTML;
-	return str;
-}
-
-function generateTest(domObject, testArray){
-
-	for(let i = 0; i < testArray.length; i++){
-		
-		let word = document.createTextNode(testArray[i]);
-		let span = document.createElement("span");
-		span.setAttribute("id", "word " + (i+1));
-		span.appendChild(word);
-		domObject.appendChild(span);
-	}
 }
 
 function formTestArray(numWords){
